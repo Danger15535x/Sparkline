@@ -8,7 +8,7 @@ One 7-character code. No email, no phone, no password — just pick a name and s
 | --- | --- |
 | `client/` | React + Vite app (landing + chat, calls, media) |
 | `server/` | Node.js backend: REST API + Socket.IO realtime + WebRTC signaling (SQLite) |
-| `site/` | Static marketing page (used for GitHub Pages) |
+| `docs/` | Static marketing page (used for GitHub Pages) |
 | `Dockerfile` / `render.yaml` | Cloud deployment configs |
 
 ## Run locally
@@ -39,7 +39,7 @@ All config is env-based: `PORT`, `PUBLIC_URL`, `DB_PATH`, `ADMIN_KEY`, `STUN_URL
 ## GitHub Pages
 
 1. Push the repo to GitHub.
-2. Repo → Settings → Pages → deploy from branch `main`, folder `/site`.
+2. Repo → Settings → Pages → deploy from branch `main`, folder `/docs`.
 3. Open `site/index.html` and replace `http://localhost:3000` with your live server URL,
    or pass it as a query param: `?app=<url>`.
 
