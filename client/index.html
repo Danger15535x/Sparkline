@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" data-theme="system">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Sparkline — Connect instantly. Talk freely.</title>
+    <meta name="description" content="Sparkline is a fast, private way to connect with people. Create your unique code, share it, and start chatting, calling and video calling in seconds — no email or password required." />
+    <meta name="theme-color" content="#0b0e14" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f7f8fb" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Sparkline" />
+    <meta property="og:title" content="Sparkline — Connect instantly. Talk freely." />
+    <meta property="og:description" content="One code. One connection. Chat, call and video call without email or password." />
+    <meta property="og:image" content="/icons/icon-512.png" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Sparkline — Connect instantly. Talk freely." />
+    <meta name="twitter:description" content="One code. One connection. Chat, call and video call without email or password." />
+    <link rel="canonical" href="https://sparkline.example/" />
+    <script>
+      // Apply saved or system theme before first paint (no flash)
+      (function () {
+        var saved = null;
+        try { saved = localStorage.getItem('spk.theme'); } catch (e) {}
+        var theme = saved || 'system';
+        var dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>Sparkline requires JavaScript. Please enable it to continue.</noscript>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

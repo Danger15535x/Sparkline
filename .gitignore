@@ -1,0 +1,11 @@
+node_modules/
+dist/
+data/
+*.db
+*.db-journal
+uploads/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store

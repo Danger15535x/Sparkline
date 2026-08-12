@@ -1,0 +1,22 @@
+{
+  "name": "sparkline-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Sparkline backend: REST API + Socket.IO realtime + WebRTC signaling",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "start:prod": "NODE_ENV=production node src/index.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.1"
+  }
+}

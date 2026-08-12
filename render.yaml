@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: sparkline
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/public/config
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 3000
+      - key: PUBLIC_URL
+        sync: false
+      - key: ADMIN_KEY
+        sync: false
+    disk:
+      name: sparkline-data
+      mountPath: /app/data
+      sizeGB: 1
