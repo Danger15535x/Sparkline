@@ -3,7 +3,7 @@ import { useApp } from './lib/store.jsx';
 import { api } from './lib/api.js';
 import { useRoute, navigate, matchRoute } from './lib/router.js';
 import { useCallEngine } from './lib/calls.js';
-import { timeAgo, lastActiveLabel, formatSize, formatDuration, initials } from './lib/format.js';
+import { timeAgo, lastActiveLabel, formatSize, formatDuration, initials, formatCode, isValidCode } from './lib/format.js';
 import { qrScanSupported, copyText, detectDevice } from './lib/device.js';
 import { ChatWindow } from './components/ChatWindow.jsx';
 import { Avatar, Drawer, Modal, Tabs, Switch, Spinner, EmptyState, SkeletonList, Toasts } from './components/ui.jsx';
@@ -35,6 +35,10 @@ function Landing({ onEntered }) {
   const [status, setStatus] = useState('');
   const [creating, setCreating] = useState(false);
   const [nameError, setNameError] = useState('');
+  const [joinCode, setJoinCode] = useState('');
+  const [joinError, setJoinError] = useState('');
+  const [joinInfo, setJoinInfo] = useState(null);
+  const [joinBusy, setJoinBusy] = useState(false);
   const nameRef = useRef(null);
 
   const isDark = state.theme === 'dark' || (state.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -44,17 +48,54 @@ function Landing({ onEntered }) {
     if (!trimmed) {
       setNameError('Pick a name to get your code');
       nameRef.current?.focus();
-      return;
+      return null;
     }
     setCreating(true);
     try {
       const data = await api('/onboard', { method: 'POST', body: { displayName: trimmed, status: status.trim() } });
       login(data.user, data.token);
       onEntered?.();
+      toast(`Your code is ${data.user.code} — share it!`, 'success');
+      return data.user;
     } catch (e) {
       toast(e.message, 'error');
+      return null;
     } finally {
       setCreating(false);
+    }
+  };
+
+  const joinWithCode = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setNameError('Pick a name first');
+      nameRef.current?.focus();
+      return;
+    }
+    if (!isValidCode(joinCode)) {
+      setJoinError('Enter a full code — like SPK-8F2KQ7');
+      return;
+    }
+    setJoinBusy(true);
+    setJoinError('');
+    try {
+      const data = await api('/onboard', { method: 'POST', body: { displayName: trimmed, status: status.trim() } });
+      login(data.user, data.token);
+      onEntered?.();
+      let name = null;
+      try {
+        const found = await api(`/users/lookup?code=${encodeURIComponent(joinCode)}`);
+        name = found?.user?.displayName || null;
+      } catch { /* code not found — connect will confirm */ }
+      setJoinInfo({ code: joinCode, displayName: name });
+      await api('/connections', { method: 'POST', body: { code: joinCode } });
+      toast(name ? `Request sent to ${name} — they'll see it when online` : `Request sent to ${joinCode} — they'll see it when online`, 'success');
+      setJoinCode('');
+      setTimeout(() => setJoinInfo(null), 4000);
+    } catch (e) {
+      setJoinError(e.message);
+    } finally {
+      setJoinBusy(false);
     }
   };
 
@@ -82,7 +123,7 @@ function Landing({ onEntered }) {
           <div className="eyebrow"><span className="pulse-dot" /> Chat, call &amp; share — without an account</div>
           <h1>Connect instantly.<br /><span className="grad">Talk freely.</span></h1>
           <p className="lead">
-            One 7-character code. No email, no phone, no password — just pick a name and
+            One simple code. No email, no phone, no password — just pick a name and
             start chatting, calling or video calling in seconds.
           </p>
 
@@ -108,6 +149,26 @@ function Landing({ onEntered }) {
             {nameError && <p className="field-error" role="alert"><IconInfo /> {nameError}</p>}
           </div>
 
+          <div className="join-card">
+            <div className="join-head"><span className="join-ico"><IconHash /></span><span>Already have a code? <b>Join a friend</b></span></div>
+            <div className="join-row">
+              <input
+                className={`input input-code ${joinError ? 'has-error' : ''}`}
+                placeholder="SPK-XXXXXX"
+                value={joinCode}
+                onChange={(e) => { setJoinCode(formatCode(e.target.value)); if (joinError) setJoinError(''); }}
+                onKeyDown={(e) => e.key === 'Enter' && !joinBusy && joinWithCode()}
+                aria-label="Friend's Sparkline code"
+              />
+              <button className="btn btn-outline" onClick={joinWithCode} disabled={joinBusy || !isValidCode(joinCode)}>
+                {joinBusy ? <span className="spinner spinner-sm" /> : null}
+                {joinBusy ? 'Joining…' : 'Join'}
+              </button>
+            </div>
+            {joinInfo?.displayName && <p className="join-hint"><IconCheck /> Found {joinInfo.displayName} — ready to connect</p>}
+            {joinError && <p className="field-error" role="alert"><IconInfo /> {joinError}</p>}
+          </div>
+
           <div className="trust-row">
             <span className="trust-chip"><IconCheck /> 100% free</span>
             <span className="trust-chip"><IconKey /> No password to forget</span>
@@ -127,7 +188,7 @@ function Landing({ onEntered }) {
               </div>
               <div className="mock-row">
                 <span className="mock-avatar">A</span>
-                <div className="mock-bubble"><b>ABC-1234</b></div>
+                <div className="mock-bubble"><b>SPK-8F2KQ7</b></div>
               </div>
               <div className="mock-row me">
                 <div className="mock-bubble">Nice, connecting now… <span className="mock-ticks">✓✓</span></div>
@@ -156,7 +217,7 @@ function Landing({ onEntered }) {
           <p>From first visit to first message in under a minute.</p>
         </div>
         <div className="steps">
-          <div className="step rise"><span className="step-icon"><IconKey /></span><h3>Get your code</h3><p>A unique 7-character Sparkline code, generated for you instantly.</p></div>
+          <div className="step rise"><span className="step-icon"><IconKey /></span><h3>Get your code</h3><p>A unique code like SPK-8F2KQ7, generated for you instantly.</p></div>
           <div className="step rise"><span className="step-icon"><IconShare /></span><h3>Share it</h3><p>Send your code to friends — or scan a QR code in person.</p></div>
           <div className="step rise"><span className="step-icon"><IconPhone /></span><h3>Talk</h3><p>Chat, send files, voice messages, GIFs and make calls.</p></div>
         </div>
@@ -277,6 +338,7 @@ function NewChat({ onOpenChat }) {
   const [q, setQ] = useState('');
   const [results, setResults] = useState([]);
   const [code, setCode] = useState('');
+  const [codeStatus, setCodeStatus] = useState(null);
   const [busy, setBusy] = useState(false);
   const [groupTitle, setGroupTitle] = useState('');
   const [groupInvite, setGroupInvite] = useState('');
@@ -309,14 +371,23 @@ function NewChat({ onOpenChat }) {
   };
 
   const connectByCode = async () => {
-    if (!code.trim()) return;
+    if (!isValidCode(code)) {
+      setCodeStatus({ kind: 'error', text: 'Enter a full code — like SPK-8F2KQ7' });
+      return;
+    }
     setBusy(true);
+    setCodeStatus(null);
     try {
-      const { connectionId } = await api('/connections', { method: 'POST', body: { code: code.trim() } });
-      toast('Connection request sent', 'success');
+      const { connectionId } = await api('/connections', { method: 'POST', body: { code } });
+      let name = null;
+      try {
+        const found = await api(`/users/lookup?code=${encodeURIComponent(code)}`);
+        name = found?.user?.displayName || null;
+      } catch { /* ignore */ }
+      setCodeStatus({ kind: 'ok', text: name ? `Request sent to ${name} — waiting for them to accept` : 'Request sent — waiting for them to accept' });
       setCode('');
     } catch (e) {
-      toast(e.message, 'error');
+      setCodeStatus({ kind: 'error', text: e.message });
     } finally {
       setBusy(false);
     }
@@ -418,9 +489,17 @@ function NewChat({ onOpenChat }) {
         {tab === 'code' && (
           <div className="stack" style={{ padding: 12 }}>
             <div className="flex" style={{ gap: 8 }}>
-              <input className="input grow" placeholder="e.g. ABC-1234" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} onKeyDown={(e) => e.key === 'Enter' && connectByCode()} />
-              <button className="btn btn-primary" onClick={connectByCode} disabled={busy}>Send</button>
+              <input
+                className={`input input-code grow ${codeStatus?.kind === 'error' ? 'has-error' : ''}`}
+                placeholder="SPK-XXXXXX"
+                value={code}
+                onChange={(e) => { setCode(formatCode(e.target.value)); if (codeStatus) setCodeStatus(null); }}
+                onKeyDown={(e) => e.key === 'Enter' && !busy && connectByCode()}
+              />
+              <button className="btn btn-primary" onClick={connectByCode} disabled={busy || !isValidCode(code)}>Send</button>
             </div>
+            {codeStatus?.kind === 'ok' && <p className="join-hint"><IconCheck /> {codeStatus.text}</p>}
+            {codeStatus?.kind === 'error' && <p className="field-error" role="alert"><IconInfo /> {codeStatus.text}</p>}
             <button className="btn btn-outline" onClick={() => copyText(myCode).then(() => toast('Your code copied — share it!', 'success'))}>
               <IconShare /> Share my code: <b>{myCode}</b>
             </button>

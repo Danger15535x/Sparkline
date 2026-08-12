@@ -114,3 +114,13 @@ export function detectLinks(text) {
   if (last < text.length) parts.push({ text: text.slice(last) });
   return parts;
 }
+export function formatCode(raw) {
+  let clean = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (clean.startsWith('SPK')) clean = clean.slice(3);
+  if (clean.length > 6) clean = clean.slice(0, 6);
+  return clean ? `SPK-${clean}` : '';
+}
+
+export function isValidCode(c) {
+  return /^SPK-[A-Z0-9]{6}$/.test(c || '');
+}
