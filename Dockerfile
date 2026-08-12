@@ -1,23 +1,28 @@
-FROM node:22-alpine
+FROM node:22-alpine AS build
 
 WORKDIR /app
 
 COPY client/package.json client/package-lock.json ./client/
-RUN cd client && npm ci --omit=dev
+RUN cd client && npm ci
 
 COPY client/ ./client/
 RUN cd client && npm run build
 
-COPY server/package.json server/package-lock.json ./server/
-RUN cd server && npm ci --omit=dev
+FROM node:22-alpine
 
-COPY server/ ./server/
+WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0
 ENV CLIENT_DIR=/app/client/dist
-ENV DATA_DIR=/app/data
+
+COPY --from=build /app/client/dist ./client/dist
+
+COPY server/package.json server/package-lock.json ./server/
+RUN cd server && npm ci --omit=dev
+
+COPY server/ ./server/
 
 EXPOSE 3000
 
